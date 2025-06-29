@@ -3,7 +3,8 @@
 Tampio on komentoriviohjelma kirjanpitoraporttien luomiseen, voisipa joku sanoa sitä kirjanpito-ohjelmaksikin. Ohjelman käyttö perustuu tekstimuotoisiin kirjanpitotiedostoihin, joiden pohjalta se luo HTML-muotoisen raportin. Tampio on luotu pääasiassa erään yhdistyksen tarpeita silmällä pitäen, enkä suosittele sitä ainakaan kovin suurimittaiseen käyttöön. Jos kiinnostuit kirjanpidon järjestämisestä tekstitiedostolla, suosittelen tutustumaan kypsempiin *[Plain Text Accounting](https://plaintextaccounting.org/)* -ohjelmiin.
 
 ## Käyttö
-Voit ladata Tampion lähdekoodin ja käyttää sitä miten parhaaksi näet.
+Valmiiksi käännetty Tampio löytyy Linuxille Releases-kohdasta oikealta.
+Vaihtoehtoisesti voit ladata Tampion lähdekoodin ja käyttää sitä miten parhaaksi näet.
 
 Raportin luonti onnistuu yksinkeraisimmillaan seuraavasti
 ```
