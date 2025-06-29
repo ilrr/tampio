@@ -1,0 +1,13 @@
+[package]
+name = "tampio"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = "4.5.40"
+html-escape = "0.2.13"
+itertools = "0.14.0"
+serde = { version = "1.0.219", features = ["derive", "rc"] }
+serde_json = "1.0.140"
+time = { version = "0.3.41", features = ["formatting", "macros", "parsing"] }
+unicode-bidi = "0.3.18"

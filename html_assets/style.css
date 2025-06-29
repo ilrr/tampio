@@ -1,0 +1,703 @@
+:root {
+    --dark-brown: #221800;
+    --line-brown: #7B3F00;
+    --highlight0: #8a5e3f;
+    --highlight1: #ad9485;
+    --highlight2: #e1ceb7;
+    --margin: 8px;
+}
+
+body {
+    font-family: 'IBM Plex Sans';
+    margin: 8px 0px;
+
+    h2 {
+        margin-left: 8px;
+        margin-right: 8px;
+    }
+}
+
+h2 {
+    color: var(--dark-brown);
+    width: max-content;
+    cursor: pointer;
+
+    &:hover::after {
+        content: " [piilota]";
+        color: var(--line-brown);
+        opacity: .33;
+        font-size: 0.7em;
+        font-weight: normal;
+    }
+}
+
+.description {
+    break-inside: avoid-page;
+}
+
+.amount {
+    font-size: 0.9rem;
+    font-family: 'IBM Plex Mono';
+    justify-self: end;
+    text-align: right;
+    margin-top: 0.1rem;
+}
+
+
+.header {
+    font-weight: bold;
+    color: var(--dark-brown);
+    break-after: avoid;
+}
+
+.entries,
+.entry:first-child {
+    break-before: avoid;
+}
+
+.footer {
+    font-weight: bold;
+    font-style: italic;
+    color: var(--dark-brown);
+}
+
+
+.leaf .header {
+    font-weight: unset;
+    color: unset;
+}
+
+a {
+    color: unset;
+    text-decoration: unset;
+}
+
+.diary {
+    display: grid;
+    grid-template-columns: auto auto 1fr min-content min-content;
+    column-gap: 1em;
+
+    #diary-header {
+        display: grid;
+        grid-template-columns: subgrid;
+        grid-column: 1/6;
+        border-bottom: dotted 1px var(--line-brown);
+        background-color: white;
+        padding-right: var(--margin);
+        position: sticky;
+        top: 0;
+
+        .debit {
+            grid-column: 4;
+        }
+
+        .debit,
+        .credit {
+            color: initial;
+            font-weight: initial;
+            justify-self: end;
+        }
+    }
+
+    .transaction {
+        display: grid;
+        grid-template-columns: subgrid;
+        grid-column: 1/6;
+        margin-bottom: 0.5em;
+        margin-left: var(--margin);
+        margin-right: var(--margin);
+
+        /* grid-template-columns: subgrid; */
+        .header {
+            display: contents;
+
+            .doc {
+                grid-column: 1;
+            }
+
+            .date {
+                grid-column: 2/3;
+            }
+
+            .description {
+                grid-column: 3/6;
+            }
+        }
+
+        &:target {
+            background-color: var(--highlight2);
+            scroll-margin-top: 1lh;
+        }
+
+    }
+
+    .entries {
+        /* display: grid; */
+        /* grid-column: 1/6; */
+        /* grid-template-columns: subgrid; */
+        display: contents;
+        /* grid-column: 3/6; */
+        /* grid-template-columns: auto auto auto auto; */
+    }
+
+    .entry {
+        display: grid;
+        grid-template-columns: subgrid;
+        grid-column: 1/6;
+
+        .account-info {
+            grid-column: 1/4;
+            margin-left: 2em;
+
+            .account-n {
+                display: inline;
+                /* display: inline-block; */
+                /* width: 4ch; */
+                /* grid-column: 3; */
+            }
+
+            .account-name {
+                display: inline;
+                /* grid-column: 4/6; */
+            }
+        }
+    }
+}
+
+.general-ledger {
+    display: grid;
+    grid-template-columns: min-content min-content auto min-content min-content min-content;
+    column-gap: 1em;
+    /* width: 100%; */
+    /* overflow: hidden; */
+
+    #general-ledger-header {
+        display: grid;
+        grid-template-columns: subgrid;
+        grid-column: 1/7;
+        border-bottom: dotted 1px var(--line-brown);
+        background-color: white;
+        padding-right: var(--margin);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        /* mix-blend-mode: multiply; */
+
+        .account-info {
+            grid-column: 1/4;
+            margin-left: var(--margin);
+            color: var(--dark-brown);
+            font-weight: bold;
+
+            div {
+                display: inline;
+            }
+        }
+
+        .debit {
+            grid-column: 4;
+        }
+
+        /* pointer-events: none; */
+
+        .credit,
+        .debit,
+        .sum {
+            color: initial;
+            font-weight: initial;
+            justify-self: end;
+            z-index: 100;
+            /* transform: translateZ(100); */
+        }
+    }
+
+
+    .account {
+        display: grid;
+        grid-template-columns: subgrid;
+        grid-column: 1/7;
+        margin-bottom: 0.5rem;
+        /* border: 2px red solid; */
+        /* will-change: transform; */
+        /* transform: translateZ(0); */
+        /* contain: layout; */
+        /* overflow: scroll; */
+        /* height: 100%; */
+        /* position: sticky; */
+        /* top: 0; */
+        /* overflow-x: hidden; */
+
+        /* &::before { */
+        /*     display: block; */
+        /*     width: auto; */
+        /*     border-bottom: solid 1px var(--line-brown); */
+        /*     content: ""; */
+        /*     height: 0; */
+        /*     position: sticky; */
+        /*     margin-bottom: -2px; */
+        /*     top: 22px; */
+        /*     margin-left: -8px; */
+        /*     margin-right: -100vw; */
+        /*     width: 0; */
+        /*     padding-right: 100vw; */
+        /* } */
+
+        .header {
+            grid-column: 1/7;
+            display: grid;
+            grid-template-columns: subgrid;
+            /* position: sticky; */
+            top: -7px;
+            /* bottom: 0; */
+            /* background-color: white; */
+            /* z-index: 0; */
+            margin-left: var(--margin);
+            margin-right: var(--margin);
+            /* padding-top: 8px; */
+            /* padding-left: 8px; */
+            /* padding-right: 8px; */
+            /* overflow: hidden; */
+            /* width: 100%; */
+            /* overflow-x: hidden; */
+            /* overflow: hidden; */
+
+            /* border-bottom: solid 1px var(--line-brown); */
+
+
+            .account-info {
+                grid-column: 1/7;
+
+                div {
+                    display: inline;
+                }
+            }
+
+
+        }
+
+        .entries {
+            display: contents;
+
+            .entry {
+                display: grid;
+                grid-template-columns: subgrid;
+                grid-column: 1/7;
+                margin-left: var(--margin);
+                margin-right: var(--margin);
+            }
+        }
+
+        .sums {
+            display: grid;
+            grid-template-columns: subgrid;
+            grid-column: 4/7;
+            border-top: black solid 1px;
+            font-weight: bold;
+            color: var(--dark-brown);
+            margin-right: var(--margin);
+            margin-left: var(--margin);
+            /* .debit { */
+            /* grid-column: 4; */
+            /* } */
+            /* .credit { */
+            /* grid-column: 5; */
+            /* } */
+            /* .sum { */
+            /* grid-column: 6; */
+            /* } */
+        }
+
+        &:has(.entry:target)>.header {
+            background-color: var(--highlight0);
+        }
+
+        .entry:target {
+            background-color: var(--highlight2);
+            /* scroll-margin-top: 10vh; */
+            scroll-margin-top: 1lh;
+        }
+
+        &:target {
+            /* scroll-margin-top: 0px; */
+
+            &>.header {
+                background-color: var(--highlight0);
+            }
+        }
+    }
+}
+
+.entry:hover {
+    background-color: var(--highlight1);
+    /* color: red; */
+}
+
+.balance-sheet {
+    >.account>.footer::after {
+        content: "";
+        display: table-row;
+    }
+}
+
+.balance-sheet,
+.income-statement {
+
+    display: table;
+    margin-left: 8px;
+    margin-right: 8px;
+    /* border-collapse: collapse; */
+
+
+    .table-header {
+        display: table-header-group;
+        /* background-color: white; */
+        /* display: contents; */
+
+        >div {
+            display: table-row;
+            position: sticky;
+            /* top: 0; */
+        }
+
+        .fiscal-years {
+            top: 0;
+            background-color: white;
+
+            &::before {
+                content: "";
+                display: table-cell;
+            }
+
+            .fy>div {
+                display: table-cell;
+                /* padding-right: 0.5ch; */
+            }
+
+            .fy {
+                display: contents;
+            }
+
+            .fy>:nth-child(1) {
+                border-left: dashed 1px var(--line-brown);
+            }
+
+            .fy2 .fiscal-year {
+                text-align: center;
+                width: 300%;
+                margin-left: -100%;
+                /* span: 3; */
+            }
+
+            >.fiscal-year {
+                text-align: center;
+                display: table-cell;
+            }
+
+            .fy2 {
+                max-width: 0;
+            }
+
+        }
+
+        .header-cells {
+            top: 1lh;
+            background-color: white;
+
+            div {
+                display: table-cell;
+                text-align: right;
+                border-bottom: solid 1px var(--line-brown);
+
+                &:first-child {
+                    text-align: center;
+                }
+
+                &:not(:first-child) {
+                    padding-right: 0.5ch;
+                }
+
+                &:nth-child(3n-1) {
+                    border-left: dashed 1px var(--line-brown);
+                }
+            }
+        }
+    }
+
+    >.account {
+        display: table-row-group;
+
+        >.header,
+        >.footer {
+            font-size: 1.1rem;
+        }
+    }
+
+    .account {
+
+        .header,
+        .footer {
+            display: table-row;
+        }
+    }
+
+
+
+    .account {
+        display: contents;
+        /* display: table-row-group; */
+    }
+
+    .account:has(.account):not(:has(.account .account)) {
+        display: table-row-group;
+        break-inside: avoid;
+    }
+
+    .account:has(>:is(.header, .footer):hover) div {
+        background-color: var(--highlight1);
+        /* color:blue; */
+    }
+
+    .account:has(>:target) div {
+        background-color: var(--highlight2);
+    }
+
+    .account-info {
+        display: table-cell;
+        padding-right: 1em;
+
+        * {
+            display: inline;
+        }
+    }
+
+    .sum,
+    .credit,
+    .debit {
+        display: table-cell;
+        width: 9ch;
+
+        &:not(:has(#abc)) {
+            padding-left: 0.5ch;
+            padding-right: 0.5ch;
+        }
+    }
+
+    .debit {
+        border-left: 1px dashed var(--line-brown);
+    }
+
+    .amount {
+        padding-left: 1em;
+    }
+
+    .header,
+    .footer {
+        >* {
+            border-bottom: 1px dashed var(--line-brown);
+            /* border-top: 2px dashed var(--line-brown); */
+        }
+    }
+
+
+
+    /* :not(.leaf) { */
+    /* > :last-child { */
+    /* color: blue; */
+    /* } */
+    /* } */
+
+
+    >.account>.account>:is(.header, .footer)>.account-info {
+        padding-left: 1em;
+    }
+
+    >.account>.account>.account>:is(.header, .footer)>.account-info {
+        padding-left: 2em;
+    }
+
+    >.account>.account>.account>.account>:is(.header, .footer)>.account-info {
+        padding-left: 3em;
+    }
+
+    >.account>.account>.account>.account>.account>:is(.header, .footer)>.account-info {
+        padding-left: 4em;
+    }
+
+    >.account>.account>.account>.account>.account>.account>:is(.header, .footer)>.account-info {
+        padding-left: 5em;
+    }
+
+    >.account>.account>.account>.account>.account>.account>.account>:is(.header, .footer)>.account-info {
+        padding-left: 6em;
+    }
+
+    >.account>.account>.account>.account>.account>.account>.account>.account>:is(.header, .footer)>.account-info {
+        padding-left: 7em;
+    }
+}
+
+.income-statement .leaf .sum {
+    color: #0004;
+}
+
+section:has(.hide-empty:checked) {
+
+    .income-statement,
+    .balance-sheet {
+        .leaf.empty {
+            display: none;
+            /* color: red; */
+        }
+
+        .account.empty:not(.leaf):not(:has(.account:not(.empty))) {
+            display: none;
+        }
+    }
+}
+
+section:has(.hide-empty:checked):has(.hide-one-child-footers:checked) {
+
+    .income-statement,
+    .balance-sheet {
+        .account.empty:not(.leaf):not(:has(.account:not(.leaf))):not(:has(.leaf:not(.empty) ~ .leaf:not(.empty))) {
+            >.footer {
+                /* color: red; */
+                display: none;
+            }
+
+            .leaf .amount {
+                color: unset;
+                /* color: var(--dark-brown); */
+                /* font-weight: bold; */
+                /* font-style: italic; */
+            }
+
+            >.header * {
+                border-bottom: none;
+            }
+        }
+    }
+}
+
+section.hidden {
+    display: inline-block;
+
+    *:not(h2) {
+        display: none;
+    }
+
+    h2 {
+        opacity: 0.5;
+        font-size: 1rem;
+        margin: 0 8px;
+
+        &::after {
+            opacity: 0;
+            content: " [näytä]";
+            user-select: none;
+            font-size: 0.7em;
+            font-weight: normal;
+        }
+
+        &:hover::after {
+            /* content: " [näytä]"; */
+            opacity: 1;
+            /* color: var(--line-brown); */
+            /* font-size: 0.5em; */
+        }
+
+        /* cursor: s-resize; */
+    }
+}
+
+@media print {
+
+    /* @page { */
+    /*     margin: 0; */
+    /* } */
+    /* body { */
+    /*     margin: 1.6cm; */
+    /* } */
+    .general-ledger,
+    .diary {
+        .account .header {
+            break-inside: avoid;
+            break-after: avoid;
+            /* color: red; */
+            /* border: green 1px solid; */
+            padding-bottom: 1lh;
+            margin-bottom: -1lh;
+        }
+
+        /* .header::after { */
+        /*     content: ""; */
+        /*     display: block; */
+        /*     grid-column: 1; */
+        /*     height: 10em; */
+        /*     margin-bottom: -10em; */
+        /*     border: 1px solid blue; */
+        /*     break-inside: avoid; */
+        /* } */
+    }
+
+
+    .gl-header {
+        position: relative;
+
+        .account-info {
+            display: none;
+        }
+    }
+
+    .sums .sum {
+        break-inside: avoid;
+    }
+
+    .sums .sum::before {
+        content: "";
+        display: block;
+        height: 1em;
+        margin-top: -1em;
+    }
+
+    .general-ledger .account:has(.entry:nth-child(4)) {
+        display: contents;
+    }
+
+    section:not(.hidden)~section:not(hidden) {
+        break-before: always;
+    }
+
+
+
+    /* section:has(.hide-empty:checked):has(.hide-one-child-footers:checked) { */
+    /**/
+    /*     .income-statement, */
+    /*     .balance-sheet { */
+    /*         .account.empty:not(.leaf):not(:has(.account:not(.leaf))):not(:has(.leaf:not(.empty) ~ .leaf:not(.empty))) { */
+    /*             break-inside: avoid; */
+    /**/
+    /*             &::before { */
+    /*                 content: ""; */
+    /*                 display: block; */
+    /*                 height: 2lh; */
+    /*                 break-inside: avoid; */
+    /*                 break-before: always; */
+    /*                 position: absolute; */
+    /*                 border: 2px red solid; */
+    /*                 color: red; */
+    /*             } */
+    /**/
+    /*         } */
+    /*     } */
+    /* } */
+
+    input {
+        display: none;
+    }
+
+    section.hidden {
+        display: none;
+    }
+
+}
