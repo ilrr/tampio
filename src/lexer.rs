@@ -1,14 +1,13 @@
 use std::{
     cmp::Ordering,
     collections::VecDeque,
-    iter::{repeat, Peekable},
+    iter::{Peekable, repeat},
     str::{Chars, Lines},
 };
 
 use itertools::Itertools;
-use time::{macros::format_description, Date};
-use unicode_bidi::{data_source::BidiMatchedOpeningBracket, BidiDataSource, HardcodedBidiData};
-
+use time::{Date, macros::format_description};
+use unicode_bidi::{BidiDataSource, HardcodedBidiData, data_source::BidiMatchedOpeningBracket};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token {
@@ -17,6 +16,8 @@ pub enum Token {
     Number(i32),
     Minus,
     Plus,
+    Debit,
+    Credit,
     Assign,
     Colon,
     ColonBlockEnd,
@@ -62,7 +63,7 @@ impl<'a> Lexer<'a> {
 
     fn tokenize_line(&mut self, line: &str) {
         let trimmed_line = line.trim();
-        if trimmed_line.is_empty() {
+        if trimmed_line.is_empty() || trimmed_line.starts_with("--") {
             return;
         }
         let mut line_iter = trimmed_line.chars().peekable();
@@ -121,7 +122,19 @@ impl<'a> Lexer<'a> {
                     line_iter.next();
                     self.token_queue.push_back(Token::Assign);
                 }
-                '-' | '\u{2212}' => {
+                '-' => {
+                    line_iter.next();
+                    match line_iter.peek() {
+                        Some('-') => {
+                            break;
+                        }
+                        _ => {
+                            self.token_queue.push_back(Token::Minus);
+                            continue;
+                        }
+                    }
+                }
+                '\u{2212}' => {
                     line_iter.next();
                     self.token_queue.push_back(Token::Minus);
                 }
@@ -201,14 +214,38 @@ impl<'a> Lexer<'a> {
     }
 
     fn identifier(&mut self, line_iter: &mut Peekable<Chars>) {
-        let ident = line_iter
+        let ident: String = line_iter
             .peeking_take_while(|c| c.is_alphanumeric() || *c == '_')
             .collect();
-        if ident == "AUTO" {
-            self.token_queue.push_back(Token::Auto);
-        } else {
-            self.token_queue.push_back(Token::Identifier(ident))
+
+        match ident.as_str() {
+            "AUTO" => {
+                self.token_queue.push_back(Token::Auto);
+            }
+            "C" | "CR" | "Cr" | "CREDIT" | "KREDIT" => {
+                self.token_queue.push_back(Token::Credit);
+            }
+            "D" | "DR" | "Dr" | "DEBIT" | "DEBET" => {
+                self.token_queue.push_back(Token::Debit);
+            }
+            "cr" if line_iter.peek() == Some(&'.') => {
+                line_iter.next();
+                self.token_queue.push_back(Token::Credit);
+            }
+            "dr" if line_iter.peek() == Some(&'.') => {
+                line_iter.next();
+                self.token_queue.push_back(Token::Debit);
+            }
+            ident => {
+                self.token_queue.push_back(Token::Identifier(ident.into()));
+            }
         }
+
+        // if ident == "AUTO" {
+        //     self.token_queue.push_back(Token::Auto);
+        // } else {
+        //     self.token_queue.push_back(Token::Identifier(ident))
+        // }
     }
 
     fn parse_decimal(&mut self, s: String) -> Option<Token> {
@@ -273,7 +310,9 @@ impl<'a> Lexer<'a> {
         if self.token_queue.is_empty() {
             if let Some(l) = self.lines.next() {
                 match l {
-                    _ if l.find(|c: char| !c.is_whitespace()).is_none() => {
+                    _ if l.find(|c: char| !c.is_whitespace()).is_none()
+                        || l.trim().starts_with("--") =>
+                    {
                         return self.next_token();
                     }
                     _ => {
@@ -289,4 +328,51 @@ impl<'a> Lexer<'a> {
         }
         self.token_queue.pop_front()
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn string() {
+        let mut lexer = Lexer::new(r#"'"' »abc»"#);
+        lexer.next_token();
+        assert_eq!(lexer.next_token(), Some(Token::String("\"".into())));
+        assert_eq!(lexer.next_token(), Some(Token::String("abc".into())));
+    }
+
+    #[test]
+    fn comment() {
+        let mut lexer = Lexer::new("-- aaa\n- b\n\n  --ö\n\na");
+        assert_eq!(lexer.next_token(), Some(Token::Newline));
+        assert_eq!(lexer.next_token(), Some(Token::Minus));
+        assert_eq!(lexer.next_token(), Some(Token::Identifier("b".into())));
+        assert_eq!(lexer.next_token(), Some(Token::Newline));
+        assert_eq!(lexer.next_token(), Some(Token::Identifier("a".into())));
+    }
+
+    #[test]
+    fn debit() {
+        let mut lexer = Lexer::new("D Dr DR DEBIT DEBET dr.");
+        lexer.next_token();
+        assert_eq!(lexer.next_token(), Some(Token::Debit));
+        assert_eq!(lexer.next_token(), Some(Token::Debit));
+        assert_eq!(lexer.next_token(), Some(Token::Debit));
+        assert_eq!(lexer.next_token(), Some(Token::Debit));
+        assert_eq!(lexer.next_token(), Some(Token::Debit));
+        assert_eq!(lexer.next_token(), Some(Token::Debit));
+    }
+    #[test]
+    fn credit() {
+        let mut lexer = Lexer::new("C Cr CR CREDIT KREDIT cr.");
+        lexer.next_token();
+        assert_eq!(lexer.next_token(), Some(Token::Credit));
+        assert_eq!(lexer.next_token(), Some(Token::Credit));
+        assert_eq!(lexer.next_token(), Some(Token::Credit));
+        assert_eq!(lexer.next_token(), Some(Token::Credit));
+        assert_eq!(lexer.next_token(), Some(Token::Credit));
+        assert_eq!(lexer.next_token(), Some(Token::Credit));
+    }
+
 }

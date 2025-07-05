@@ -10,8 +10,8 @@ use time::{Date, macros::format_description};
 use crate::{
     parser::Parser,
     semantic::{
-        AccountType, SAccount, SAuto, SEntry, SExpression, SHeader, SStatement, SectionType,
-        Semantic,
+        AccountType, EntryType, SAccount, SAuto, SEntry, SExpression, SHeader, SStatement,
+        SectionType, Semantic,
     },
 };
 
@@ -389,12 +389,18 @@ impl Ledger {
                     self.exec_account(n, name, subs, acc_type, None)
                 }
             }
-            SStatement::BudgetEntry { account, amount } => self.exec_transaction(
+            SStatement::BudgetEntry { account, amounts } => self.exec_transaction(
                 None,
                 "".into(),
                 vec![SEntry {
                     account,
-                    amounts: vec![SAuto::Val(amount)],
+                    amounts: amounts
+                        .iter()
+                        .map(|(a, t)| match t {
+                            EntryType::None | EntryType::Credit => SAuto::Val(-a),
+                            EntryType::Debit => SAuto::Val(*a),
+                        })
+                        .collect(), // amounts: vec![SAuto::Val(amount)],
                 }],
                 None,
                 true,
@@ -525,7 +531,8 @@ impl Ledger {
             for amount in &entry.amounts {
                 match amount {
                     SAuto::Val(n) => {
-                        let n = if budget { -*n } else { *n };
+                        // let n = if budget { -*n } else { *n };
+                        let n = *n;
                         resolved_entries.push((account_number, n));
                         balance += n;
                     }
