@@ -4,7 +4,7 @@ use serde::Serialize;
 use time::Date;
 
 use crate::lexer::Token;
-use crate::parser::{Node};
+use crate::parser::Node;
 
 #[derive(Debug)]
 pub(crate) enum SStatement {
@@ -20,8 +20,15 @@ pub(crate) enum SStatement {
     Account(Option<i32>, String, Vec<SStatement>, AccountType),
     BudgetEntry {
         account: SAccount,
-        amount: i32,
+        amounts: Vec<(i32, EntryType)>,
     },
+}
+
+#[derive(Debug)]
+pub(crate)  enum EntryType {
+    Debit,
+    Credit,
+    None,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -142,9 +149,7 @@ impl Semantic {
                     Token::Date(date),
                     Token::String(description),
                     Token::Identifier(d),
-                ] => {
-                    self.transaction(Some(*date), description.clone(), body, Some(d.clone()))
-                }
+                ] => self.transaction(Some(*date), description.clone(), body, Some(d.clone())),
                 [Token::String(description)] => {
                     self.transaction(None, description.clone(), body, None)
                 }
@@ -163,12 +168,8 @@ impl Semantic {
                 [Token::Minus, Token::String(s)] => {
                     self.account(None, s.clone(), body, AccountType::LiabilitiesTopLevel)
                 }
-                [Token::Number(n)] => {
-                    self.budget_row(SAccount::N(*n), body)
-                }
-                [Token::Identifier(i)] => {
-                    self.budget_row(SAccount::Alias(i.into()), body)
-                }
+                [Token::Number(n)] => self.budget_row(SAccount::N(*n), body),
+                [Token::Identifier(i)] => self.budget_row(SAccount::Alias(i.into()), body),
                 _ => panic!("unknown header {:?}", h),
             },
             Node::List(l) => match &l[..] {
@@ -195,24 +196,25 @@ impl Semantic {
     }
 
     fn budget_row(&mut self, account: SAccount, body: Vec<Node>) -> SStatement {
-        if body.len() != 1 {
-            panic!("too long body")
-        };
-        if let Node::List(amount) = &body[0] {
-            match &amount[..] {
-                [Token::Number(n)] => SStatement::BudgetEntry {
-                    account: account,
-                    amount: *n,
-                },
-                [Token::Minus, Token::Number(n)] => SStatement::BudgetEntry {
-                    account: account,
-                    amount: -n,
-                },
-                _ => panic!("should be a number"),
+        // if body.len() != 1 {
+        //     panic!("too long body")
+        // };
+        let mut amounts = vec![]; 
+        for entry in body {
+            if let Node::List(amount) = entry {
+                amounts.push(
+                match &amount[..] {
+                    [Token::Number(n)] => (*n, EntryType::None),
+                    [Token::Minus, Token::Number(n)] => (-n, EntryType::None),
+                    [Token::Debit, Token::Number(n)] | [Token::Number(n), Token::Debit] => (*n, EntryType::Debit),
+                    [Token::Credit, Token::Number(n)] | [Token::Number(n), Token::Credit] => (*n, EntryType::Credit),
+                    _ => panic!("should be a number"),
+                })
+            } else {
+                panic!("no blocks here")
             }
-        } else {
-            panic!("no blocks here")
         }
+        SStatement::BudgetEntry { account: account, amounts }
     }
 
     fn account(
@@ -286,8 +288,12 @@ impl Semantic {
         for a in amounts {
             if let Node::List(l) = a {
                 match &l[..] {
-                    [Token::Number(n)] => result.push(SAuto::Val(*n)),
-                    [Token::Minus, Token::Number(n)] => result.push(SAuto::Val(-n)),
+                    [Token::Number(n)]
+                    | [Token::Debit, Token::Number(n)]
+                    | [Token::Number(n), Token::Debit] => result.push(SAuto::Val(*n)),
+                    [Token::Minus, Token::Number(n)]
+                    | [Token::Credit, Token::Number(n)]
+                    | [Token::Number(n), Token::Credit] => result.push(SAuto::Val(-n)),
                     [Token::Auto] => result.push(SAuto::Auto),
                     _ => panic!("expected some $$$"),
                 }
