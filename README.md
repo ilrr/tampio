@@ -23,7 +23,7 @@ tampio kirjanpito2000.tamp talousarvio2000.tamp kirjanpito1999.tamp -o tilinpä�
 
 Vertailutiedot näkyvät raportissa käänteisessä järjestyksessä kuin komennossa.
 
-Raportin värimaailma on luonnonläheisen ruskea.
+Raportin värimaailma on kaunis luonnonläheisen ruskea.
 
 ## Tiedostoformaatti
 
