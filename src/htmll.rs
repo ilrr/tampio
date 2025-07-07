@@ -11,18 +11,22 @@ use crate::{
 #[allow(dead_code)]
 impl Ledger {
     pub fn html_string(&self) -> String {
-        self.html().render()
+        self.html(false).render()
+    }
+
+    pub fn html_string_with_budgeting(&self) -> String {
+        self.html(true).render()
     }
 
     pub fn pretty_html_string(&self) -> String {
-        self.html().pretty()
+        self.html(false).pretty()
     }
 
-    fn html(&self) -> Html {
+    fn html(&self, budgeting: bool) -> Html {
         let mut root = Html::new("html").with_attribute("lang", "fi");
 
         let mut body = Html::new("body");
-        if !(self.ledger_type == LedgerType::Budget) {
+        if !(self.ledger_type == LedgerType::Budget || budgeting) {
             body.push_child(
                 Html::new("section")
                     .with_attribute("id", "päiväkirja")
@@ -67,14 +71,14 @@ impl Ledger {
                 .with_child(
                     Html::new_void("input")
                         .with_attribute("class", "hide-empty")
-                        .with_attribute("type", "checkbox"), 
+                        .with_attribute("type", "checkbox"),
                 )
                 .with_child(
                     Html::new_void("input")
                         .with_attribute("class", "hide-one-child-footers")
-                        .with_attribute("type", "checkbox"), 
+                        .with_attribute("type", "checkbox"),
                 )
-                .with_child(self.html_income_statement()),
+                .with_child(self.html_income_statement(budgeting)),
         );
 
         root.push_child(self.head());
@@ -224,20 +228,25 @@ impl Ledger {
             .into_iter()
             .filter(|a| a.t == AccountType::Assets || a.t == AccountType::LiabilitiesTopLevel);
         for account in accounts {
-            balance_sheet.push_child(self.html_account_row(account.clone()));
+            balance_sheet.push_child(self.html_account_row(account.clone(), false));
         }
 
         balance_sheet
     }
 
-    fn html_income_statement(&self) -> Html {
+    fn html_income_statement(&self, include_budgeting_cells: bool) -> Html {
         let mut income_statement = Html::div_with_class("income-statement");
 
         let fiscal_years = self
             .options
             .iter()
             .map(|o| o.get("lyhenne").map_or("".into(), |s| s.clone()))
-            .rev();
+            .rev()
+            .chain(if include_budgeting_cells {
+                vec!["Talousarvio".into()]
+            } else {
+                vec![]
+            });
         let mut fy_elem = Html::div_with_class("fiscal-years");
         let mut headers_elem = Html::div_with_class("header-cells")
             .with_child(Html::div_with_class_and_text("", "tili".into()));
@@ -268,28 +277,27 @@ impl Ledger {
             .into_iter()
             .filter(|a| a.t == AccountType::None);
         for account in accounts {
-            income_statement.push_child(self.html_account_row(account.clone()));
+            income_statement
+                .push_child(self.html_account_row(account.clone(), include_budgeting_cells));
         }
         income_statement
     }
 
-    fn html_account_row(&self, mut account: Account) -> Html {
+    fn html_account_row(&self, mut account: Account, include_budgeting_cells: bool) -> Html {
         let mut account_elem = Html::div_with_class("account");
         let is_leaf = account.is_leaf();
         if is_leaf {
             account_elem.push_attribute("class", "leaf");
         }
         if account.transactions.is_empty()
-            // && (account.t != AccountType::None
-             &&(   /* || */ (account.debits.iter().all(|a| *a == 0)
-                    && account.credits.iter().all(|a| *a == 0)))
+            && (account.debits.iter().all(|a| *a == 0) && account.credits.iter().all(|a| *a == 0))
         {
             account_elem.push_attribute("class", "empty");
         }
         let mut header = Html::div_with_class("header");
         let account_n = if let Some(n) = account.n {
             header.push_attribute("id", format!("a-{n}").as_str());
-            if !account.transactions.is_empty() {
+            if !account.transactions.is_empty() && !include_budgeting_cells {
                 Html::div_with_class("n").with_child(
                     Html::new("a")
                         .with_attribute("href", format!("#gl-{n}").as_str())
@@ -308,13 +316,13 @@ impl Ledger {
                 .with_child(account_n)
                 .with_child(Html::div_with_class_and_text("name", account_name.clone())),
         );
-        for e in self.html_account_header_numbers(account.clone()) {
+        for e in self.html_account_header_numbers(account.clone(), include_budgeting_cells) {
             header.push_child(e);
         }
         account_elem.push_child(header);
         for sub_account in account.clone().sub_accounts {
             let sub_account = sub_account.borrow().to_owned();
-            account_elem.push_child(self.html_account_row(sub_account));
+            account_elem.push_child(self.html_account_row(sub_account, include_budgeting_cells));
         }
         if account.t == AccountType::LiabilitiesTopLevel {
             let accs = self.accounts();
@@ -342,7 +350,7 @@ impl Ledger {
             account.rec_credits = zip(account.rec_credits.clone(), profit_account.credits.clone())
                 .map(|(a, b)| a + b)
                 .collect_vec();
-            account_elem.push_child(self.html_account_row(profit_account));
+            account_elem.push_child(self.html_account_row(profit_account, include_budgeting_cells));
         }
         if !is_leaf {
             let mut footer = Html::div_with_class("footer");
@@ -351,7 +359,7 @@ impl Ledger {
                 "account-info",
                 format!("{} yhteensä", account_name),
             );
-            for e in self.html_account_footer_numbers(account.clone()) {
+            for e in self.html_account_footer_numbers(account.clone(), include_budgeting_cells) {
                 footer.push_child(e);
             }
             account_elem.push_child(footer);
@@ -359,7 +367,11 @@ impl Ledger {
         account_elem
     }
 
-    fn html_account_header_numbers(&self, account: Account) -> Vec<Html> {
+    fn html_account_header_numbers(
+        &self,
+        account: Account,
+        include_budgeting_cells: bool,
+    ) -> Vec<Html> {
         let mut elems = vec![];
 
         for i in (0..account.debits.len()).rev() {
@@ -391,10 +403,35 @@ impl Ledger {
                 ));
             }
         }
+
+        if include_budgeting_cells {
+            if account.t == AccountType::None {
+                if account.n.is_some() {
+                    elems.push(
+                        Html::div_with_class("debit amount budget")
+                            .with_child(Html::new_void("input").with_attribute("type", "text")),
+                    );
+                    elems.push(Html::div_with_class("credit amount budget")
+                            .with_child(Html::new_void("input").with_attribute("type", "text")),
+                        );
+                    elems.push(Html::div_with_class("sum amount budget")
+                            // .with_child(Html::new_void("input").with_attribute("type", "text")),
+                        );
+                } else {
+                    elems.push(Html::div_with_class("debit"));
+                    elems.push(Html::div_with_class("credit"));
+                    elems.push(Html::div_with_class("sum"));
+                }
+            }
+        }
         elems
     }
 
-    fn html_account_footer_numbers(&self, account: Account) -> Vec<Html> {
+    fn html_account_footer_numbers(
+        &self,
+        account: Account,
+        include_budgeting_cells: bool,
+    ) -> Vec<Html> {
         let mut elems = vec![];
 
         for i in (0..account.debits.len()).rev() {
@@ -424,6 +461,13 @@ impl Ledger {
                     "sum amount",
                     format!("{}", Self::amount_as_string(sum, true)),
                 ));
+            }
+        }
+        if include_budgeting_cells {
+            if account.t == AccountType::None {
+                elems.push(Html::div_with_class("debit amount budget"));
+                elems.push(Html::div_with_class("credit amount budget"));
+                elems.push(Html::div_with_class("sum amount budget"));
             }
         }
         elems

@@ -21,6 +21,11 @@ fn main() {
                 .short('o')
                 .help("File to write html ledger into"),
         )
+        .arg(
+            Arg::new("budgeting_html")
+                .short('b')
+                .action(ArgAction::SetTrue),
+        )
         .get_matches();
 
     let mut input_paths = matches.get_many::<String>("inputs").unwrap();
@@ -44,7 +49,15 @@ fn main() {
     }
 
     if let Some(path) = matches.get_one::<String>("output") {
-        if let Ok(_) = fs::write(path, ledger.html_string()) {
+        let res = fs::write(
+            path,
+            if matches.get_flag("budgeting_html") {
+                ledger.html_string_with_budgeting()
+            } else {
+                ledger.html_string()
+            },
+        );
+        if let Ok(_) = res {
             eprintln!("Kirjanpitoraportti luotu: {path}");
         } else {
             eprintln!("Kirjanpitoraportin tallennus epäonnistui :-(");

@@ -536,6 +536,20 @@ a {
     }
 }
 
+.budget {
+    input {
+        width: 100%;
+    
+    & {
+        font-family: inherit;
+        font-size: inherit;
+        font-weight: inherit;
+        color: inherit;
+        text-align: inherit;
+    }
+}
+}
+
 .income-statement .leaf .sum {
     color: #0004;
 }
