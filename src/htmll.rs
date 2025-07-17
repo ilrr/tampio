@@ -81,6 +81,26 @@ impl Ledger {
                 .with_child(self.html_income_statement(budgeting)),
         );
 
+        if budgeting {
+            body.push_child(
+                Html::div_with_class("budget-output-container hidden")
+                    .with_attribute("id", "budget-output-container")
+                    .with_child(Html::new("textarea").with_attribute("id", "budget-output"))
+                    .with_child(
+                        Html::new("button")
+                            .with_text("Piilota")
+                            .with_attribute("onclick", "hideOutput()"),
+                    ),
+            );
+
+            body.push_child(
+                Html::new("button")
+                    .with_text("Näytä")
+                    .with_attribute("id", "display-budget-output")
+                    .with_attribute("onclick", "displayOutput()"),
+            );
+        }
+
         root.push_child(self.head());
         root.push_child(body);
 
@@ -355,10 +375,23 @@ impl Ledger {
         if !is_leaf {
             let mut footer = Html::div_with_class("footer");
 
-            footer.push_child_div_with_class_and_text(
-                "account-info",
-                format!("{} yhteensä", account_name),
+            footer.push_child(
+                Html::div_with_class("account-info")
+                    .with_child(
+                        Html::new("span")
+                            .with_class("name")
+                            .with_string(account_name),
+                    )
+                    .with_child(
+                        Html::new("span")
+                            .with_class("yht")
+                            .with_text("yhteensä".into()),
+                    ),
             );
+            // footer.push_child_div_with_class_and_text(
+            //     "account-info",
+            //     format!("{} yhteensä", account_name),
+            // );
             for e in self.html_account_footer_numbers(account.clone(), include_budgeting_cells) {
                 footer.push_child(e);
             }
@@ -411,12 +444,13 @@ impl Ledger {
                         Html::div_with_class("debit amount budget")
                             .with_child(Html::new_void("input").with_attribute("type", "text")),
                     );
-                    elems.push(Html::div_with_class("credit amount budget")
+                    elems.push(
+                        Html::div_with_class("credit amount budget")
                             .with_child(Html::new_void("input").with_attribute("type", "text")),
-                        );
-                    elems.push(Html::div_with_class("sum amount budget")
-                            // .with_child(Html::new_void("input").with_attribute("type", "text")),
-                        );
+                    );
+                    elems.push(
+                        Html::div_with_class("sum amount budget"), // .with_child(Html::new_void("input").with_attribute("type", "text")),
+                    );
                 } else {
                     elems.push(Html::div_with_class("debit"));
                     elems.push(Html::div_with_class("credit"));

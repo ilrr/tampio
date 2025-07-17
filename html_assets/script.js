@@ -10,19 +10,25 @@ document.onscroll = () => {
 
 document.addEventListener("click", (e) => {
   const targetId = location.hash.slice(1);
-  const targetEl = document.getElementById(targetId);
-
-  if (targetEl && !targetEl.contains(e.target)) {
-    location.hash = "🫶";
+  if (targetId) {
+    const targetEl = document.getElementById(targetId);
+    if (targetEl && !targetEl.contains(e.target)) {
+      location.hash = "🫶";
+    }
   }
   if (e.target.tagName == "H2") {
     e.target.parentElement.classList.toggle("hidden");
+  } else if (e.target.classList.contains("name") && e.target.parentElement.parentElement.classList.contains("header")) {
+    const parent = e.target.parentElement.parentElement.parentElement;
+    if (parent.classList.contains("account") && !parent.classList.contains("leaf")) {
+      parent.classList.toggle("collapse");
+    }
   }
 });
 
 
 document.addEventListener("input", e => {
-  updateBAccount(e.target);
+  if (e.target.parentElement.classList.contains("budget")) updateBAccount(e.target);
 })
 
 window.onload = () => {
@@ -31,18 +37,21 @@ window.onload = () => {
     const nn = n;
     elem.id = `input-${nn}`;
     elem.addEventListener("keydown", e => {
-      if (e.code == "ArrowDown" || e.code == "KeyJ") {
+      if (e.code == "ArrowDown" || e.code == "KeyJ" || e.code == "Enter" || e.code == "NumpadEnter") {
         e.preventDefault();
         document.getElementById(`input-${nn + 2}`).focus();
       } else if (e.code == "ArrowUp" || e.code == "KeyK") {
         e.preventDefault();
         document.getElementById(`input-${nn - 2}`).focus();
-      } else if (e.code == "KeyL" || e.code == "Enter" || e.code == "NumpadEnter") {
+      } else if (e.code == "KeyL" || (elem.value == "" && e.code == "ArrowRight" && nn%2==0)) {
         e.preventDefault();
         document.getElementById(`input-${nn + 1}`).focus();
-      } else if (e.code == "KeyH") {
+      } else if (e.code == "KeyH" || (elem.value == "" && e.code == "ArrowLeft" && nn%2 == 1)) {
         e.preventDefault();
         document.getElementById(`input-${nn - 1}`).focus();
+      } else if (e.code == "KeyX") {
+        e.preventDefault();
+        elem.value = "";
       }
     })
     n += 1;
@@ -51,6 +60,11 @@ window.onload = () => {
 }
 
 const updateBAccount = (accountElem) => {
+  if (accountElem.value.match(/^\d*[.,]?\d{0,2}$/)) {
+    accountElem.classList.remove("bad");
+  } else {
+    accountElem.classList.add("bad");
+  }
   const header = accountElem.parentElement.parentElement;
   const debit = Number(header.querySelector(".debit input").value.replace(',', '.'));
   const credit = Number(header.querySelector(".credit input").value.replace(',', '.'));
@@ -91,4 +105,25 @@ const updateBAccountFooter = (accountElem) => {
   if (parent.classList.contains("account")) {
     updateBAccountFooter(parent);
   }
+}
+
+const displayOutput = () => {
+  const outputArea = document.getElementById("budget-output");
+  outputArea.value = "§ TALOUSARVIO";
+  for (let header of document.querySelectorAll(".header[id]")) {
+    const accountNumber = header.id.split("-")[1];
+    const debit = header.querySelector("& > .budget.debit input").value.trim();
+    const credit = header.querySelector("& > .budget.credit input").value.trim();
+    let amounts = [];
+    if (debit) amounts.push(debit + " DR");
+    if (credit) amounts.push(credit + " CR");
+    if (amounts.length) {
+      outputArea.value += `\n${accountNumber}: ${amounts.join("; ")}`;
+    }
+  }
+  document.getElementById("budget-output-container").classList.toggle("hidden");
+}
+
+const hideOutput = () => {
+  document.getElementById("budget-output-container").classList.toggle("hidden");
 }

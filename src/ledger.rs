@@ -250,7 +250,7 @@ impl ScopeStack<Scope> for Vec<Scope> {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum LedgerType {
     Main,
     Budget,
@@ -280,6 +280,7 @@ impl Ledger {
     }
 
     pub fn add_comparison_from_str(&mut self, s: &str) {
+        let lt = self.ledger_type;
         let mut parser = Parser::new(s);
         let statements = Semantic::from_parse_tree(parser.parse()).statements;
         self.l_index += 1;
@@ -290,6 +291,7 @@ impl Ledger {
         }
         self.exec_statements(statements);
         self.calculate_sums();
+        self.ledger_type = lt;
     }
 
     pub fn accounts(&self) -> Vec<Account> {
