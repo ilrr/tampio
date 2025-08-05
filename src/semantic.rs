@@ -25,7 +25,7 @@ pub(crate) enum SStatement {
 }
 
 #[derive(Debug)]
-pub(crate)  enum EntryType {
+pub(crate) enum EntryType {
     Debit,
     Credit,
     None,
@@ -199,22 +199,28 @@ impl Semantic {
         // if body.len() != 1 {
         //     panic!("too long body")
         // };
-        let mut amounts = vec![]; 
+        let mut amounts = vec![];
         for entry in body {
             if let Node::List(amount) = entry {
-                amounts.push(
-                match &amount[..] {
+                amounts.push(match &amount[..] {
                     [Token::Number(n)] => (*n, EntryType::None),
                     [Token::Minus, Token::Number(n)] => (-n, EntryType::None),
-                    [Token::Debit, Token::Number(n)] | [Token::Number(n), Token::Debit] => (*n, EntryType::Debit),
-                    [Token::Credit, Token::Number(n)] | [Token::Number(n), Token::Credit] => (*n, EntryType::Credit),
+                    [Token::Debit, Token::Number(n)] | [Token::Number(n), Token::Debit] => {
+                        (*n, EntryType::Debit)
+                    }
+                    [Token::Credit, Token::Number(n)] | [Token::Number(n), Token::Credit] => {
+                        (*n, EntryType::Credit)
+                    }
                     _ => panic!("should be a number"),
                 })
             } else {
                 panic!("no blocks here")
             }
         }
-        SStatement::BudgetEntry { account: account, amounts }
+        SStatement::BudgetEntry {
+            account: account,
+            amounts,
+        }
     }
 
     fn account(

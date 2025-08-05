@@ -270,6 +270,8 @@ a {
                 div {
                     display: inline;
                 }
+
+
             }
 
 
@@ -339,6 +341,10 @@ a {
     }
 }
 
+.income-statement {
+    margin-bottom: 64px;
+}
+
 .balance-sheet,
 .income-statement {
 
@@ -361,6 +367,7 @@ a {
 
         .fiscal-years {
             top: 0;
+            ;
             background-color: white;
 
             &::before {
@@ -444,7 +451,44 @@ a {
 
     .account {
         display: contents;
+
         /* display: table-row-group; */
+        &:not(.leaf)>.header .name {
+            cursor: pointer;
+            user-select: none;
+        }
+    }
+
+    .account.collapse {
+        >.account:not(#a) {
+            display: none;
+        }
+
+        .header .account-info::after {
+            content: " · · · ";
+            color: var(--line-brown);
+        }
+
+        .footer {
+            .account-info .name {
+                display: none;
+            }
+            /* .yht { */
+            /*     padding-left: 1rem; */
+            /*     opacity: 0.7; */
+            /* } */
+
+            /* &::before { */
+            /*     content: "yhteensä"; */
+            /*     display: table-cell; */
+            /*     color: var(--dark-brown); */
+            /*     border-bottom: 1px dashed; */
+            /* } */
+        }
+
+        .header>div {
+            border-bottom: none;
+        }
     }
 
     .account:has(.account):not(:has(.account .account)) {
@@ -452,9 +496,13 @@ a {
         break-inside: avoid;
     }
 
-    .account:has(>:is(.header, .footer):hover) div {
+    .account:has(>:is(.header, .footer):hover) div:not(#a) {
         background-color: var(--highlight1);
         /* color:blue; */
+    }
+
+    .account:has(>.header input:focus) div {
+        background-color: var(--highlight2);
     }
 
     .account:has(>:target) div {
@@ -498,14 +546,12 @@ a {
         }
     }
 
-
-
-    /* :not(.leaf) { */
-    /* > :last-child { */
-    /* color: blue; */
-    /* } */
-    /* } */
-
+    .header:has(.debit input:focus) .debit:not(.budget):not(#a),
+    .header:has(.credit input:focus) .credit:not(.budget):not(#a) {
+        /* text-decoration: underline; */
+        backdrop-filter: saturate(200%) brightness(80%);
+        background: #0000;
+    }
 
     >.account>.account>:is(.header, .footer)>.account-info {
         padding-left: 1em;
@@ -534,6 +580,56 @@ a {
     >.account>.account>.account>.account>.account>.account>.account>.account>:is(.header, .footer)>.account-info {
         padding-left: 7em;
     }
+}
+
+.budget {
+    input {
+        width: 100%;
+        background-color: #fffc;
+        border: solid 1px gray;
+
+        & {
+            font-family: inherit;
+            font-size: inherit;
+            font-weight: inherit;
+            color: inherit;
+            text-align: inherit;
+        }
+
+        &.bad {
+            color: red;
+        }
+    }
+}
+
+.budget-output-container {
+    &.hidden {
+        display: none;
+    }
+
+    #budget-output {
+        width: 80vw;
+        height: 80vh;
+        margin: 10vh 10vw;
+    }
+
+    button {
+        position: fixed;
+        top: 8px;
+        right: 8px;
+    }
+
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    background: #000a;
+}
+
+#display-budget-output, #save-budget-output {
+    position: fixed;
+    bottom: 8px;
+    right: 8px;
 }
 
 .income-statement .leaf .sum {

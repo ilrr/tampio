@@ -1,3 +1,5 @@
 /target
 /local_test_files
 *_o.rs
+.clj-kondo
+.lsp
