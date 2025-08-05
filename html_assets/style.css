@@ -553,15 +553,6 @@ a {
         background: #0000;
     }
 
-
-
-    /* :not(.leaf) { */
-    /* > :last-child { */
-    /* color: blue; */
-    /* } */
-    /* } */
-
-
     >.account>.account>:is(.header, .footer)>.account-info {
         padding-left: 1em;
     }
@@ -635,7 +626,7 @@ a {
     background: #000a;
 }
 
-#display-budget-output {
+#display-budget-output, #save-budget-output {
     position: fixed;
     bottom: 8px;
     right: 8px;

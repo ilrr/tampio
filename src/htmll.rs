@@ -8,25 +8,37 @@ use crate::{
     semantic::AccountType,
 };
 
+pub(crate) enum Budgeting {
+    No,
+    File,
+    Server,
+}
+
 #[allow(dead_code)]
 impl Ledger {
     pub fn html_string(&self) -> String {
-        self.html(false).render()
+        self.html(Budgeting::No).render()
     }
 
-    pub fn html_string_with_budgeting(&self) -> String {
-        self.html(true).render()
+    pub fn html_string_with_budgeting(&self, budgeting: Budgeting) -> String {
+        self.html(budgeting).render()
     }
 
     pub fn pretty_html_string(&self) -> String {
-        self.html(false).pretty()
+        self.html(Budgeting::No).pretty()
     }
 
-    fn html(&self, budgeting: bool) -> Html {
+    fn html(&self, budgeting: Budgeting) -> Html {
         let mut root = Html::new("html").with_attribute("lang", "fi");
 
         let mut body = Html::new("body");
-        if !(self.ledger_type == LedgerType::Budget || budgeting) {
+
+        let is_budgeting = match budgeting {
+            Budgeting::No => false,
+            _ => true,
+        };
+
+        if !(self.ledger_type == LedgerType::Budget || is_budgeting) {
             body.push_child(
                 Html::new("section")
                     .with_attribute("id", "päiväkirja")
@@ -78,30 +90,41 @@ impl Ledger {
                         .with_attribute("class", "hide-one-child-footers")
                         .with_attribute("type", "checkbox"),
                 )
-                .with_child(self.html_income_statement(budgeting)),
+                .with_child(self.html_income_statement(is_budgeting)),
         );
 
-        if budgeting {
-            body.push_child(
-                Html::div_with_class("budget-output-container hidden")
-                    .with_attribute("id", "budget-output-container")
-                    .with_child(Html::new("textarea").with_attribute("id", "budget-output"))
-                    .with_child(
-                        Html::new("button")
-                            .with_text("Piilota")
-                            .with_attribute("onclick", "hideOutput()"),
-                    ),
-            );
+        match budgeting {
+            Budgeting::File => {
+                body.push_child(
+                    Html::div_with_class("budget-output-container hidden")
+                        .with_attribute("id", "budget-output-container")
+                        .with_child(Html::new("textarea").with_attribute("id", "budget-output"))
+                        .with_child(
+                            Html::new("button")
+                                .with_text("Piilota")
+                                .with_attribute("onclick", "hideOutput()"),
+                        ),
+                );
 
-            body.push_child(
-                Html::new("button")
-                    .with_text("Näytä")
-                    .with_attribute("id", "display-budget-output")
-                    .with_attribute("onclick", "displayOutput()"),
-            );
+                body.push_child(
+                    Html::new("button")
+                        .with_text("Näytä")
+                        .with_attribute("id", "display-budget-output")
+                        .with_attribute("onclick", "displayOutput()"),
+                );
+            }
+            Budgeting::Server => {
+                body.push_child(
+                    Html::new("button")
+                        .with_text("Tallenna")
+                        .with_attribute("id", "save-budget-output")
+                        .with_attribute("onclick", "saveBudget()"),
+                );
+            }
+            _ => {}
         }
 
-        root.push_child(self.head());
+        root.push_child(self.head(budgeting));
         root.push_child(body);
 
         Html::document()
@@ -261,12 +284,17 @@ impl Ledger {
             .options
             .iter()
             .map(|o| o.get("lyhenne").map_or("".into(), |s| s.clone()))
-            .rev()
-            .chain(if include_budgeting_cells {
-                vec!["Talousarvio".into()]
+            .skip(if self.ledger_type == LedgerType::Budgeting {
+                1
             } else {
-                vec![]
-            });
+                0
+            })
+            .rev();
+        // .chain(if include_budgeting_cells {
+        //     vec!["Talousarvio".into()]
+        // } else {
+        //     vec![]
+        // });
         let mut fy_elem = Html::div_with_class("fiscal-years");
         let mut headers_elem = Html::div_with_class("header-cells")
             .with_child(Html::div_with_class_and_text("", "tili".into()));
@@ -287,6 +315,34 @@ impl Ledger {
             headers_elem.push_child_div_with_class_and_text("", "tulot".into());
             headers_elem.push_child_div_with_class_and_text("", "summa".into());
         }
+
+        if include_budgeting_cells {
+            let mut fy_container_elem = Html::div_with_class("fy");
+            fy_container_elem.push_child(Html::new("div"));
+            let title = if self.ledger_type == LedgerType::Budgeting
+                && self.options[0].get("lyhenne").is_some()
+            {
+                self.options[0].get("lyhenne").unwrap().replace('"', "&quot;")
+            } else {
+                "Talousarvio".to_string()
+            };
+            fy_container_elem.push_child(
+                Html::new("div").with_class("fy2").with_child(
+                    Html::new_void("input")
+                        .with_class("fiscal-year")
+                        .with_attribute("value", title.as_str())
+                        .with_attribute("type", "text")
+                        .with_attribute("id", "budget-fy-title")
+                        .with_attribute("autocomplete", "off"),
+                ),
+            );
+            fy_container_elem.push_child(Html::new("div"));
+            fy_elem.push_child(fy_container_elem);
+            headers_elem.push_child_div_with_class_and_text("", "menot".into());
+            headers_elem.push_child_div_with_class_and_text("", "tulot".into());
+            headers_elem.push_child_div_with_class_and_text("", "summa".into());
+        }
+
         income_statement.push_child(
             Html::div_with_class("table-header")
                 .with_child(fy_elem)
@@ -407,8 +463,14 @@ impl Ledger {
     ) -> Vec<Html> {
         let mut elems = vec![];
 
-        for i in (0..account.debits.len()).rev() {
+        let starting_index = if self.ledger_type == LedgerType::Budgeting {
+            1
+        } else {
+            0
+        };
+        for i in (starting_index..account.debits.len()).rev() {
             if account.t == AccountType::None {
+                // println!("{} {:?} {:?}", account.name, account.credits, account.debits);
                 elems.push(Html::div_with_class_and_text(
                     "debit amount",
                     Self::debit(account.debits[i]),
@@ -440,16 +502,38 @@ impl Ledger {
         if include_budgeting_cells {
             if account.t == AccountType::None {
                 if account.n.is_some() {
+                    let (debit, credit, sum) = {
+                        if self.ledger_type == LedgerType::Budgeting {
+                            (
+                                Self::debit(account.debits[0]),
+                                Self::debit(account.credits[0]),
+                                Self::amount_as_string(
+                                    account.credits[0] - account.debits[0],
+                                    account.credits[0] != 0 || account.debits[0] != 0,
+                                ),
+                            )
+                        } else {
+                            ("".to_string(), "".to_string(), "".to_string())
+                        }
+                    };
                     elems.push(
-                        Html::div_with_class("debit amount budget")
-                            .with_child(Html::new_void("input").with_attribute("type", "text")),
+                        Html::div_with_class("debit amount budget").with_child(
+                            Html::new_void("input")
+                                .with_attribute("type", "text")
+                                .with_attribute("autocomplete", "off")
+                                .with_attribute("value", &debit),
+                        ),
                     );
                     elems.push(
-                        Html::div_with_class("credit amount budget")
-                            .with_child(Html::new_void("input").with_attribute("type", "text")),
+                        Html::div_with_class("credit amount budget").with_child(
+                            Html::new_void("input")
+                                .with_attribute("type", "text")
+                                .with_attribute("autocomplete", "off")
+                                .with_attribute("value", &credit),
+                        ),
                     );
                     elems.push(
-                        Html::div_with_class("sum amount budget"), // .with_child(Html::new_void("input").with_attribute("type", "text")),
+                        Html::div_with_class("sum amount budget").with_string(sum), // .with_child(Html::new_void("input").with_attribute("type", "text")),
                     );
                 } else {
                     elems.push(Html::div_with_class("debit"));
@@ -468,18 +552,28 @@ impl Ledger {
     ) -> Vec<Html> {
         let mut elems = vec![];
 
+        // let starting_index = if self.ledger_type==LedgerType::Budgeting {1} else {0};
         for i in (0..account.debits.len()).rev() {
             if account.t == AccountType::None {
+                let (dc, cc, sc) = if i == 0 && self.ledger_type == LedgerType::Budgeting {
+                    (
+                        "debit amount budget",
+                        "credit amount budget",
+                        "sum amount budget",
+                    )
+                } else {
+                    ("debit amount", "credit amount", "sum amount")
+                };
                 elems.push(Html::div_with_class_and_text(
-                    "debit amount",
+                    dc,
                     Self::debit(account.rec_debits[i]),
                 ));
                 elems.push(Html::div_with_class_and_text(
-                    "credit amount",
+                    cc,
                     Self::debit(account.rec_credits[i]),
                 ));
                 elems.push(Html::div_with_class_and_text(
-                    "sum amount",
+                    sc,
                     Self::amount_as_string(
                         account.rec_credits[i] - account.rec_debits[i],
                         account.rec_credits[i] != 0 || account.rec_debits[i] != 0,
@@ -497,7 +591,7 @@ impl Ledger {
                 ));
             }
         }
-        if include_budgeting_cells {
+        if include_budgeting_cells && self.ledger_type != LedgerType::Budgeting {
             if account.t == AccountType::None {
                 elems.push(Html::div_with_class("debit amount budget"));
                 elems.push(Html::div_with_class("credit amount budget"));
@@ -574,23 +668,35 @@ impl Ledger {
     }
 
     #[cfg(debug_assertions)]
-    fn head(&self) -> Html {
+    fn head(&self, budgeting: Budgeting) -> Html {
         let mut head = Html::new("head");
-        head.push_child(
-            Html::new_void("link")
-                .with_attribute("rel", "stylesheet")
-                .with_attribute("href", "../../html_assets/style.css"),
-        );
-        head.push_child(
-            Html::new("script")
-                .with_attribute("type", "text/javascript")
-                .with_attribute("src", "../../html_assets/script.js"),
-        );
+        match budgeting {
+            Budgeting::Server => {
+                head.push_child(
+                    Html::new("style").with_raw(include_str!("../html_assets/style.css")),
+                );
+                head.push_child(
+                    Html::new("script").with_raw(include_str!("../html_assets/script.js")),
+                );
+            }
+            _ => {
+                head.push_child(
+                    Html::new_void("link")
+                        .with_attribute("rel", "stylesheet")
+                        .with_attribute("href", "../../html_assets/style.css"),
+                );
+                head.push_child(
+                    Html::new("script")
+                        .with_attribute("type", "text/javascript")
+                        .with_attribute("src", "../../html_assets/script.css"),
+                );
+            }
+        }
         head
     }
 
     #[cfg(not(debug_assertions))]
-    fn head(&self) -> Html {
+    fn head(&self, budgeting: Budgeting) -> Html {
         let mut head = Html::new("head");
         head.push_child(Html::new("style").with_raw(include_str!("../html_assets/mini/style.css")));
         head.push_child(

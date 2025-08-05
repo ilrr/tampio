@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use serde::{Serialize, ser::SerializeStruct};
 use std::{
     cell::RefCell,
@@ -189,6 +190,34 @@ impl Account {
             }
         }
     }
+
+    pub fn as_string(&self,top_level:bool, indent_level: usize) -> String {
+        let sub_account_strings = if self.is_leaf() {
+            "".to_string()
+        } else {
+            format!("\n{}",self.sub_accounts.iter().map(|a| a.borrow().as_string(false, indent_level+2)).join("\n"))
+        };
+        let number = if let Some(n) = self.n {
+            format!("{n} ")
+        } else {
+            "".to_string()
+        };
+        let prefix = if !top_level {""} else { match self.t {
+            AccountType::None | AccountType::Liabilities => "",
+            AccountType::Assets => "+ ",
+            AccountType::LiabilitiesTopLevel => "- "
+        }};
+        let name = self.name.clone();
+        let name = if !name.contains("\"") {
+            format!("\"{name}\"")
+        } else if !name.contains("'") {
+            format!("'{name}'")
+        } else {
+            format!("»{name}»")
+        };
+        let indent = " ".repeat(indent_level);
+        format!("{indent}{prefix}{number}{name}{sub_account_strings}")
+    }
 }
 
 pub struct Ledger {
@@ -254,6 +283,7 @@ impl ScopeStack<Scope> for Vec<Scope> {
 pub enum LedgerType {
     Main,
     Budget,
+    Budgeting,
 }
 
 impl Ledger {
@@ -298,6 +328,10 @@ impl Ledger {
         self.accounts.iter().map(|rc| rc.borrow().clone()).collect()
     }
 
+    pub fn account_map_string(&self) -> String {
+        self.accounts.iter().map(|a| a.borrow().as_string(true,0)).join("\n")
+    }
+
     #[allow(dead_code)]
     pub fn print_accounts(&self) {
         println!("{:?}", self.accounts());
@@ -322,6 +356,11 @@ impl Ledger {
         instance.calculate_sums();
         instance.populate_account_transactions();
         instance
+    }
+
+    pub fn from_string(source: String) -> Self {
+        let mut parser = Parser::new(&source);
+        Self::exec(Semantic::from_parse_tree(parser.parse()).statements)
     }
 
     pub fn get_account(&self, account_n: i32) -> Option<Account> {

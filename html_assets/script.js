@@ -37,21 +37,22 @@ window.onload = () => {
     const nn = n;
     elem.id = `input-${nn}`;
     elem.addEventListener("keydown", e => {
-      if (e.code == "ArrowDown" || e.code == "KeyJ" || e.code == "Enter" || e.code == "NumpadEnter") {
+      if (e.code == "ArrowDown" || e.code == "KeyJ" || e.code == "KeyS" || e.code == "Enter" || e.code == "NumpadEnter") {
         e.preventDefault();
         document.getElementById(`input-${nn + 2}`).focus();
-      } else if (e.code == "ArrowUp" || e.code == "KeyK") {
+      } else if (e.code == "ArrowUp" || e.code == "KeyK" || e.code == "KeyW") {
         e.preventDefault();
         document.getElementById(`input-${nn - 2}`).focus();
-      } else if (e.code == "KeyL" || (elem.value == "" && e.code == "ArrowRight" && nn%2==0)) {
+      } else if (e.code == "KeyL" || e.code == "KeyD" || (elem.value == "" && e.code == "ArrowRight" && nn % 2 == 0)) {
         e.preventDefault();
         document.getElementById(`input-${nn + 1}`).focus();
-      } else if (e.code == "KeyH" || (elem.value == "" && e.code == "ArrowLeft" && nn%2 == 1)) {
+      } else if (e.code == "KeyH" || e.code == "KeyA" || (elem.value == "" && e.code == "ArrowLeft" && nn % 2 == 1)) {
         e.preventDefault();
         document.getElementById(`input-${nn - 1}`).focus();
       } else if (e.code == "KeyX") {
         e.preventDefault();
         elem.value = "";
+        updateBAccount(elem);
       }
     })
     n += 1;
@@ -68,7 +69,7 @@ const updateBAccount = (accountElem) => {
   const header = accountElem.parentElement.parentElement;
   const debit = Number(header.querySelector(".debit input").value.replace(',', '.'));
   const credit = Number(header.querySelector(".credit input").value.replace(',', '.'));
-  header.querySelector(".budget.sum").innerText = (credit - debit).toFixed(2).replace('.', ',');
+  header.querySelector(".budget.sum").innerText = (debit || credit) ? (credit - debit).toFixed(2).replace('.', ',') : "";
   header.parentElement.setAttribute("data-rec-credit", credit);
   header.parentElement.setAttribute("data-rec-debit", debit);
 
@@ -109,7 +110,37 @@ const updateBAccountFooter = (accountElem) => {
 
 const displayOutput = () => {
   const outputArea = document.getElementById("budget-output");
-  outputArea.value = "§ TALOUSARVIO";
+  outputArea.value = `§ TALOUSARVIO\n${generateOutput()}`;
+  document.getElementById("budget-output-container").classList.toggle("hidden");
+}
+
+const saveBudget = async () => {
+  let title = document.getElementById("budget-fy-title").value;
+  const quotation_marks = "\"'»”’›«‘‛“‟‹⸂⸄⸉⸌⸜⸠⸃⸅⸊⸍⸝⸡";
+  for (let qm of quotation_marks) {
+    if (!title.includes(qm)) {
+      title = `lyhenne = ${qm}${title}${qm}`;
+      break;
+    }
+  }
+  const res = await fetch("/save_budget", {
+    method: "POST",
+    body: `§ TALOUSARVIO\n${generateOutput()}\n\n§ TIEDOT\n${title}`,
+  })
+  let e = document.createElement("div");
+  if (res.ok) {
+    e.innerText = "Talousarvio tallennettu";
+    e.style = "position:fixed;top:0;right:0;background:lightgreen;";
+  } else {
+    e.innerText = "Talousarvion tallennus epäonnistui";
+    e.style = "position:fixed;top:0;right:0;background:red;";
+  }
+  document.body.appendChild(e);
+  setTimeout(() => { e.remove() }, 2500);
+}
+
+const generateOutput = () => {
+  let outputString = "";
   for (let header of document.querySelectorAll(".header[id]")) {
     const accountNumber = header.id.split("-")[1];
     const debit = header.querySelector("& > .budget.debit input").value.trim();
@@ -118,10 +149,10 @@ const displayOutput = () => {
     if (debit) amounts.push(debit + " DR");
     if (credit) amounts.push(credit + " CR");
     if (amounts.length) {
-      outputArea.value += `\n${accountNumber}: ${amounts.join("; ")}`;
+      outputString += `${outputString.length ? "\n" : ""}${accountNumber}: ${amounts.join("; ")}`;
     }
   }
-  document.getElementById("budget-output-container").classList.toggle("hidden");
+  return outputString
 }
 
 const hideOutput = () => {
