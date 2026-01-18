@@ -229,6 +229,7 @@ pub struct Ledger {
     section: SectionType,
     pub options: Vec<HashMap<String, String>>,
     pub ledger_type: LedgerType,
+    pub comp_ledger_types: Vec<LedgerType>,
     pub(crate) l_index: usize,
     doc_d: HashMap<String, i32>,
 }
@@ -279,7 +280,7 @@ impl ScopeStack<Scope> for Vec<Scope> {
     }
 }
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum LedgerType {
     Main,
     Budget,
@@ -299,6 +300,7 @@ impl Ledger {
             account_dict: HashMap::new(),
             options: vec![HashMap::new()],
             ledger_type: LedgerType::Main,
+            comp_ledger_types: vec![LedgerType::Main],
             l_index: 0,
             doc_d: HashMap::new(),
         }
@@ -313,6 +315,14 @@ impl Ledger {
         let lt = self.ledger_type;
         let mut parser = Parser::new(s);
         let statements = Semantic::from_parse_tree(parser.parse()).statements;
+        if statements.iter().any(|x| match x {
+            SStatement::Section(SectionType::Budget) => true,
+            _ => false
+        }) {
+            self.comp_ledger_types.push(LedgerType::Budget);
+        } else {
+            self.comp_ledger_types.push(LedgerType::Main);
+        }
         self.l_index += 1;
         self.options.push(HashMap::new());
         for account in &self.accounts {

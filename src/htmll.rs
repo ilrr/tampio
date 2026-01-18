@@ -257,6 +257,10 @@ impl Ledger {
             .map(|o| o.get("lyhenne").map_or("".into(), |s| s.clone()))
             .rev();
         let mut fy_elem = Html::div_with_class("fiscal-years");
+        let fiscal_years = fiscal_years.zip(self.comp_ledger_types.iter().rev()).filter_map(|(y,t)| match t {
+            LedgerType::Main => Some(y),
+            _ => None
+        }); 
         for fiscal_year in fiscal_years {
             fy_elem.push_child(
                 Html::new("div")
@@ -490,15 +494,20 @@ impl Ledger {
                     ),
                 ));
             } else {
-                let sum = if account.t == AccountType::Assets {
-                    account.debits[i] - account.credits[i]
-                } else {
-                    account.credits[i] - account.debits[i]
-                };
-                elems.push(Html::div_with_class_and_text(
-                    "sum amount",
-                    Self::amount_as_string(sum, account.is_leaf()),
-                ));
+                match self.comp_ledger_types[i] {
+                    LedgerType::Main => {
+                        let sum = if account.t == AccountType::Assets {
+                            account.debits[i] - account.credits[i]
+                        } else {
+                            account.credits[i] - account.debits[i]
+                        };
+                        elems.push(Html::div_with_class_and_text(
+                            "sum amount",
+                            Self::amount_as_string(sum, account.is_leaf()),
+                        ));
+                    }
+                    _ => {}
+                }
             }
         }
 
@@ -583,15 +592,20 @@ impl Ledger {
                     ),
                 ));
             } else {
-                let sum = if account.t == AccountType::Assets {
-                    account.rec_debits[i] - account.rec_credits[i]
-                } else {
-                    account.rec_credits[i] - account.rec_debits[i]
-                };
-                elems.push(Html::div_with_class_and_text(
-                    "sum amount",
-                    format!("{}", Self::amount_as_string(sum, true)),
-                ));
+                match self.comp_ledger_types[i] {
+                    LedgerType::Main => {
+                        let sum = if account.t == AccountType::Assets {
+                            account.rec_debits[i] - account.rec_credits[i]
+                        } else {
+                            account.rec_credits[i] - account.rec_debits[i]
+                        };
+                        elems.push(Html::div_with_class_and_text(
+                            "sum amount",
+                            format!("{}", Self::amount_as_string(sum, true)),
+                        ));
+                    }
+                    _ => {}
+                }
             }
         }
         if include_budgeting_cells && self.ledger_type != LedgerType::Budgeting {
@@ -691,7 +705,7 @@ impl Ledger {
                 head.push_child(
                     Html::new("script")
                         .with_attribute("type", "text/javascript")
-                        .with_attribute("src", "../../html_assets/script.css"),
+                        .with_attribute("src", "../../html_assets/script.js"),
                 );
             }
         }

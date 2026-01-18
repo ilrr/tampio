@@ -24,7 +24,7 @@ mod semantic;
 #[tokio::main]
 async fn main() {
     let matches = Command::new("Tampio")
-        .version("0.1.2b1")
+        .version("0.1.3")
         .arg(Arg::new("inputs").required(true).action(ArgAction::Append))
         .arg(
             Arg::new("output")
@@ -73,6 +73,7 @@ async fn main() {
             return;
         }
     }
+    // ledger.comp_ledger_types.reverse();
 
     if let Some(path) = matches.get_one::<String>("output") {
         let res = fs::write(
