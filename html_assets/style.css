@@ -8,7 +8,7 @@
 }
 
 body {
-    font-family: 'IBM Plex Sans';
+    font-family: 'IBM Plex Sans', sans-serif;
     margin: 8px 0px;
 
     h2 {
@@ -345,6 +345,11 @@ a {
     margin-bottom: 64px;
 }
 
+.balance-sheet .fiscal-year {
+    padding-left: 8px;
+    min-width: max-content;
+}
+
 .balance-sheet,
 .income-statement {
 
@@ -580,6 +585,10 @@ a {
     >.account>.account>.account>.account>.account>.account>.account>.account>:is(.header, .footer)>.account-info {
         padding-left: 7em;
     }
+}
+
+:target {
+    scroll-margin-top: 2lh;
 }
 
 .budget {
