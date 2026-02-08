@@ -345,9 +345,14 @@ a {
     margin-bottom: 64px;
 }
 
-.balance-sheet .fiscal-year {
-    padding-left: 8px;
-    min-width: max-content;
+.balance-sheet {
+    .fiscal-year {
+        padding-left: 8px;
+        min-width: max-content;
+    }
+    .fiscal-years::before, .fiscal-years > .fiscal-year {
+        border-bottom: solid 1px var(--line-brown);
+    }
 }
 
 .balance-sheet,
@@ -687,8 +692,15 @@ section:has(.hide-empty:checked):has(.hide-one-child-footers:checked) {
 section.hidden {
     display: inline-block;
 
-    *:not(h2) {
+    /* &>*:not(h2) { */
+    /*     display: none; */
+    /* } */
+    &:is(#päiväkirja)>div>div:not(:target), &:is(#pääkirja)>div>div:not(:has(:target), :is(:target)), &:is(#tase, #tuloslaskelma):not(:has(:target)) :not(h2) {
         display: none;
+    }
+
+    &:has(:target) :is(#diary-header, #general-ledger-header) {
+        display: grid !important;
     }
 
     h2 {
