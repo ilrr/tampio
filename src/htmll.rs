@@ -17,18 +17,22 @@ pub(crate) enum Budgeting {
 #[allow(dead_code)]
 impl Ledger {
     pub fn html_string(&self) -> String {
-        self.html(Budgeting::No).render()
+        self.html(Budgeting::No, true).render()
+    }
+
+    pub fn html_string_without_d_gl(&self) -> String {
+        self.html(Budgeting::No, false).render()
     }
 
     pub fn html_string_with_budgeting(&self, budgeting: Budgeting) -> String {
-        self.html(budgeting).render()
+        self.html(budgeting, true).render()
     }
 
     pub fn pretty_html_string(&self) -> String {
-        self.html(Budgeting::No).pretty()
+        self.html(Budgeting::No, true).pretty()
     }
 
-    fn html(&self, budgeting: Budgeting) -> Html {
+    fn html(&self, budgeting: Budgeting, include_d_gl: bool) -> Html {
         let mut root = Html::new("html").with_attribute("lang", "fi");
 
         let mut body = Html::new("body");
@@ -39,19 +43,21 @@ impl Ledger {
         };
 
         if !(self.ledger_type == LedgerType::Budget || is_budgeting) {
-            body.push_child(
-                Html::new("section")
-                    .with_attribute("id", "päiväkirja")
-                    .with_child(Html::new("h2").with_text("Päiväkirja"))
-                    .with_child(self.html_diary()),
-            );
+            if include_d_gl {
+                body.push_child(
+                    Html::new("section")
+                        .with_attribute("id", "päiväkirja")
+                        .with_child(Html::new("h2").with_text("Päiväkirja"))
+                        .with_child(self.html_diary()),
+                );
 
-            body.push_child(
-                Html::new("section")
-                    .with_attribute("id", "pääkirja")
-                    .with_child(Html::new("h2").with_text("Pääkirja"))
-                    .with_child(self.html_general_ledger()),
-            );
+                body.push_child(
+                    Html::new("section")
+                        .with_attribute("id", "pääkirja")
+                        .with_child(Html::new("h2").with_text("Pääkirja"))
+                        .with_child(self.html_general_ledger()),
+                );
+            }
 
             body.push_child(
                 Html::new("section")
@@ -257,10 +263,12 @@ impl Ledger {
             .map(|o| o.get("lyhenne").map_or("".into(), |s| s.clone()))
             .rev();
         let mut fy_elem = Html::div_with_class("fiscal-years");
-        let fiscal_years = fiscal_years.zip(self.comp_ledger_types.iter().rev()).filter_map(|(y,t)| match t {
-            LedgerType::Main => Some(y),
-            _ => None
-        }); 
+        let fiscal_years = fiscal_years
+            .zip(self.comp_ledger_types.iter().rev())
+            .filter_map(|(y, t)| match t {
+                LedgerType::Main => Some(y),
+                _ => None,
+            });
         for fiscal_year in fiscal_years {
             fy_elem.push_child(
                 Html::new("div")

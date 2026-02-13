@@ -37,6 +37,12 @@ async fn main() {
                 .action(ArgAction::SetTrue),
         )
         .arg(Arg::new("budget_file").short('B'))
+        .arg(
+            Arg::new("exclude_d_gl")
+                .long("tt")
+                .action(ArgAction::SetTrue)
+                .help("Exclude diary and general ledger from output"),
+        )
         .get_matches();
 
     let mut input_paths = matches.get_many::<String>("inputs").unwrap();
@@ -81,7 +87,11 @@ async fn main() {
             if matches.get_flag("budgeting_html") {
                 ledger.html_string_with_budgeting(htmll::Budgeting::File)
             } else {
-                ledger.html_string()
+                if matches.get_flag("exclude_d_gl") {
+                    ledger.html_string_without_d_gl()
+                } else {
+                    ledger.html_string()
+                }
             },
         );
         if let Ok(_) = res {
@@ -147,7 +157,7 @@ fn generate_budgeting_html(budget_path: String, comparison_paths: Vec<String>) -
         }
         return ledger.html_string_with_budgeting(htmll::Budgeting::Server);
     } else {
-        let path = &comparison_paths[0]; 
+        let path = &comparison_paths[0];
         let mut ledger;
         if let Ok(s) = fs::read_to_string(path) {
             let mut parser = Parser::new(&s);
