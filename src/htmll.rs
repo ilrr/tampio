@@ -73,7 +73,7 @@ impl Ledger {
                             .with_attribute("class", "hide-one-child-footers")
                             .with_attribute("type", "checkbox"),
                     )
-                    .with_child(self.html_balance_sheet()),
+                    .with_child(self.html_balance_sheet(include_d_gl)),
             );
         }
         body.push_child(
@@ -96,7 +96,7 @@ impl Ledger {
                         .with_attribute("class", "hide-one-child-footers")
                         .with_attribute("type", "checkbox"),
                 )
-                .with_child(self.html_income_statement(is_budgeting)),
+                .with_child(self.html_income_statement(is_budgeting, include_d_gl)),
         );
 
         match budgeting {
@@ -254,7 +254,7 @@ impl Ledger {
         general_ledger
     }
 
-    fn html_balance_sheet(&self) -> Html {
+    fn html_balance_sheet(&self, links: bool) -> Html {
         let mut balance_sheet = Html::div_with_class("balance-sheet");
 
         let fiscal_years = self
@@ -283,13 +283,13 @@ impl Ledger {
             .into_iter()
             .filter(|a| a.t == AccountType::Assets || a.t == AccountType::LiabilitiesTopLevel);
         for account in accounts {
-            balance_sheet.push_child(self.html_account_row(account.clone(), false));
+            balance_sheet.push_child(self.html_account_row(account.clone(), false, links));
         }
 
         balance_sheet
     }
 
-    fn html_income_statement(&self, include_budgeting_cells: bool) -> Html {
+    fn html_income_statement(&self, include_budgeting_cells: bool, links: bool) -> Html {
         let mut income_statement = Html::div_with_class("income-statement");
 
         let fiscal_years = self
@@ -368,13 +368,21 @@ impl Ledger {
             .into_iter()
             .filter(|a| a.t == AccountType::None);
         for account in accounts {
-            income_statement
-                .push_child(self.html_account_row(account.clone(), include_budgeting_cells));
+            income_statement.push_child(self.html_account_row(
+                account.clone(),
+                include_budgeting_cells,
+                links,
+            ));
         }
         income_statement
     }
 
-    fn html_account_row(&self, mut account: Account, include_budgeting_cells: bool) -> Html {
+    fn html_account_row(
+        &self,
+        mut account: Account,
+        include_budgeting_cells: bool,
+        links: bool,
+    ) -> Html {
         let mut account_elem = Html::div_with_class("account");
         let is_leaf = account.is_leaf();
         if is_leaf {
@@ -388,7 +396,7 @@ impl Ledger {
         let mut header = Html::div_with_class("header");
         let account_n = if let Some(n) = account.n {
             header.push_attribute("id", format!("a-{n}").as_str());
-            if !account.transactions.is_empty() && !include_budgeting_cells {
+            if !account.transactions.is_empty() && !include_budgeting_cells && links {
                 Html::div_with_class("n").with_child(
                     Html::new("a")
                         .with_attribute("href", format!("#gl-{n}").as_str())
@@ -413,7 +421,11 @@ impl Ledger {
         account_elem.push_child(header);
         for sub_account in account.clone().sub_accounts {
             let sub_account = sub_account.borrow().to_owned();
-            account_elem.push_child(self.html_account_row(sub_account, include_budgeting_cells));
+            account_elem.push_child(self.html_account_row(
+                sub_account,
+                include_budgeting_cells,
+                links,
+            ));
         }
         if account.t == AccountType::LiabilitiesTopLevel {
             let accs = self.accounts();
@@ -441,7 +453,11 @@ impl Ledger {
             account.rec_credits = zip(account.rec_credits.clone(), profit_account.credits.clone())
                 .map(|(a, b)| a + b)
                 .collect_vec();
-            account_elem.push_child(self.html_account_row(profit_account, include_budgeting_cells));
+            account_elem.push_child(self.html_account_row(
+                profit_account,
+                include_budgeting_cells,
+                links,
+            ));
         }
         if !is_leaf {
             let mut footer = Html::div_with_class("footer");
