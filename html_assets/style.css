@@ -757,6 +757,13 @@ section.hidden {
         /* } */
     }
 
+    .general-ledger {
+        & #general-ledger-header {
+            & .account-info {
+                display: none;
+            }
+        }
+    }
 
     .gl-header {
         position: relative;
