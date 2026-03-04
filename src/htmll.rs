@@ -163,7 +163,7 @@ impl Ledger {
         header.push_child_div_with_class_and_text("account-info", "".into());
         header.push_child_div_with_class_and_text("debit", "debet".into());
         header.push_child_div_with_class_and_text("credit", "kredit".into());
-        header.push_child_div_with_class_and_text("sum", "summa".into());
+        header.push_child_div_with_class_and_text("sum", "saldo".into());
         general_ledger.push_child(header);
         general_ledger.push_child_div_with_class_and_text("line", "".into());
 
