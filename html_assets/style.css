@@ -792,6 +792,17 @@ section.hidden {
         break-before: always;
     }
 
+    @page landscape {
+        size: landscape;
+    }
+
+    section#tuloslaskelma {
+        page: landscape;
+    }
+
+    section#tuloslaskelma div {
+        page: landscape;
+    }   
 
 
     /* section:has(.hide-empty:checked):has(.hide-one-child-footers:checked) { */
