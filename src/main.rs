@@ -24,7 +24,7 @@ mod semantic;
 #[tokio::main]
 async fn main() {
     let matches = Command::new("Tampio")
-        .version("0.1.3")
+        .version("0.1.4")
         .arg(Arg::new("inputs").required(true).action(ArgAction::Append))
         .arg(
             Arg::new("output")
