@@ -43,6 +43,7 @@ async fn main() {
                 .action(ArgAction::SetTrue)
                 .help("Exclude diary and general ledger from output"),
         )
+        .arg(Arg::new("port").long("port"))
         .get_matches();
 
     let mut input_paths = matches.get_many::<String>("inputs").unwrap();
@@ -133,10 +134,15 @@ async fn main() {
                     }
                 }),
             );
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:3995")
+        let port = match matches.get_one::<String>("port") {
+            Some(port) => port,
+            _ => "3995",
+        };
+        // let listener = tokio::net::TcpListener::bind("127.0.0.1:3995")
+        let listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{port}"))
             .await
             .unwrap();
-        eprintln!("http://localhost:3995/");
+        eprintln!("http://localhost:{port}/");
         axum::serve(listener, app).await.unwrap();
     } else {
         println!("{}", ledger.html_string());
